@@ -1,0 +1,120 @@
+<!doctype html>
+<html><head>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<style type='text/css'>
+		html { font-family:Helvetica; color:#222; }
+		h1 { color:steelblue; font-size:24px; margin-top:24px; }
+		button { margin:0 3px 10px; font-size:12px; }
+		.logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
+        
+        .colorDes {
+            color: red;
+        }
+	</style>
+</head><body>
+	<h1 class="colorDes">WebViewJavascriptBridge demo学习 by yongSir</h1>
+
+<!--脚本开始的地方-->
+    <script>
+	window.onerror = function(err) {
+		log('window.onerror: ' + err)
+	}
+	
+    <!--创建 connectWebViewJavascriptBridge 方法-->
+	function connectWebViewJavascriptBridge(callback) {
+		if (window.WebViewJavascriptBridge) {
+			callback(WebViewJavascriptBridge)
+		} else {
+			document.addEventListener('WebViewJavascriptBridgeReady', function() {
+				callback(WebViewJavascriptBridge)
+			}, false)
+		}
+	}
+	
+    <!--调用 connectWebViewJavascriptBridge 方法-->
+    <!-- 可以看到传说中的内嵌函数(Nested function) -->
+	connectWebViewJavascriptBridge(function(bridge) {
+                                   
+                        
+        <!--输出函数-->
+		var uniqueId = 1
+        function log(message, data) {
+			var log = document.getElementById('log')
+			var el = document.createElement('div')
+			el.className = 'logLine'
+			el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
+			if (log.children.length) { log.insertBefore(el, log.children[0]) }
+			else { log.appendChild(el) }
+		}
+
+        <!-- OC向JS发消息，JS中的初始化 -->
+        <!-- 匿名function对应于OC中所发消息 -->
+		bridge.init(function(message, responseCallback) {
+			log('JS中（从OC接收的消息）', message)
+			var data = { '［［JS中］］接收到消息，并回复':'hello ， OC' }
+			log('［［JS中］］回复', data)
+			responseCallback(data)
+		})
+                                   
+
+<!--		bridge.registerHandler('testJavascriptHandler', function(data, responseCallback) {-->
+<!--			log('［［JS中］］ObjC called testJavascriptHandler with', data)-->
+<!--			var responseData = { 'Javascript Says':'Right back atcha!' }-->
+<!--			log('［［JS中］］ responding with', responseData)-->
+<!--			responseCallback(responseData)-->
+<!--		})-->
+
+
+        <!--注册 ZXJSHandler 方法-->
+        bridge.registerHandler('ZXJSHandler', function(data, responseCallback) {
+            log('[JS中]，ZXJSHandler be called, withPra: %@', data)
+            var backData = {'[JS中]':'ZXJSHandler be called'}
+            responseCallback(backData)
+            log('[JS中]，ZXJSHandler be called, then responding:', backData)
+        })
+                                   
+        <!--创建一个按钮-->
+		var button = document.getElementById('buttons').appendChild(document.createElement('button'))
+		button.innerHTML = '发送消息'
+              
+        <!-- JS向OC发消息，OC中已经的初始化 -->
+		button.onclick = function(e) {
+			e.preventDefault()
+            var data = 'JS中btn点击： ZX ,Hello!'
+			log('［［JS中］］ sending：', data)
+        
+            // JS发消息
+			bridge.send(data, function(responseData) {
+				log('［［JS中］］ got response', responseData)
+			})
+                                   
+		}
+		document.body.appendChild(document.createElement('br'))
+                                   
+        var callbackButton = document.getElementById('buttons').appendChild(document.createElement('button'))
+        callbackButton.innerHTML = 'ZXOCHandler 发送'
+        callbackButton.onclick = function(e) {
+            e.preventDefault()
+            var data = {'［JS中］message': '这是一个来自JS的消息😄'}
+            log('［JS中］，发送',data)
+            bridge.callHandler('ZXOCHandler', data, function(response) {
+                    log('[JS中］ got response', response)
+            })
+        }
+    })
+	</script>
+
+	<div id='buttons'></div> <div id='log'></div>
+</body></html>
+
+
+
+<!--		var callbackButton = document.getElementById('buttons').appendChild(document.createElement('button'))-->
+<!--		callbackButton.innerHTML = 'Fire testObjcCallback'-->
+<!--		callbackButton.onclick = function(e) {-->
+<!--			e.preventDefault()-->
+<!--			log('［［JS中］］JS calling handler "testObjcCallback"')-->
+<!--			bridge.callHandler('testObjcCallback', {'foo': 'bar'}, function(response) {-->
+<!--				log('［［JS中］］JS got response', response)-->
+<!--			})-->
+<!--		}-->

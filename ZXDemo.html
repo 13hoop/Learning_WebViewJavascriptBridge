@@ -1,0 +1,91 @@
+<!doctype html>
+<html><head>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<style type='text/css'>
+		html { font-family:Helvetica; color:#222; }
+		h1 { color:steelblue; font-size:24px; margin-top:24px; }
+		button { margin:0 3px 10px; font-size:12px; }
+		.logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
+        
+        .colorDes {
+            color: red;
+        }
+	</style>
+</head><body>
+	<h1 class="colorDes">WebViewJavascriptBridge demo学习 by yongSir</h1>
+
+<!--脚本开始的地方-->
+    <script>
+	window.onerror = function(err) {
+		log('window.onerror: ' + err)
+	}
+	
+    //<!--脚本开始的地方-->
+	function connectWebViewJavascriptBridge(callback) {
+		if (window.WebViewJavascriptBridge) {
+			callback(WebViewJavascriptBridge)
+		} else {
+			document.addEventListener('WebViewJavascriptBridgeReady', function() {
+				callback(WebViewJavascriptBridge)
+			}, false)
+		}
+	}
+	
+    //<!--激活方法-->
+	connectWebViewJavascriptBridge(function(bridge) {
+		var uniqueId = 1
+		function log(message, data) {
+			var log = document.getElementById('log')
+			var el = document.createElement('div')
+			el.className = 'logLine'
+			el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
+			if (log.children.length) { log.insertBefore(el, log.children[0]) }
+			else { log.appendChild(el) }
+		}
+                                   
+        // OC到js后，js中初始化并恢复
+		bridge.init(function(message, responseCallback) {
+			log('JS中（从OC接收的消息）', message)
+			var data = { '［［JS中］］Javascript Responds（就是js发给OC的消息）':'Wee! 为毛是法语，👌' }
+			log('［［JS中］］responding To OC with', data)
+			responseCallback(data)
+		})
+
+		bridge.registerHandler('testJavascriptHandler', function(data, responseCallback) {
+			log('［［JS中］］ObjC called testJavascriptHandler with', data)
+			var responseData = { 'Javascript Says':'Right back atcha!' }
+			log('［［JS中］］ responding with', responseData)
+			responseCallback(responseData)
+		})
+
+        //<!--创建一个按钮-->
+		var button = document.getElementById('buttons').appendChild(document.createElement('button'))
+		button.innerHTML = 'Send message to ObjC'
+		button.onclick = function(e) {
+			e.preventDefault()
+                                   
+            //<!--此处传参数-->
+			var data = 'JS中btn点击： ZX ,Hello!'
+			log('［［JS中］］ sending：', data)
+			bridge.send(data, function(responseData) {
+				log('［［JS中］］ got response', responseData)
+			})
+		}
+
+		document.body.appendChild(document.createElement('br'))
+
+		var callbackButton = document.getElementById('buttons').appendChild(document.createElement('button'))
+		callbackButton.innerHTML = 'Fire testObjcCallback'
+		callbackButton.onclick = function(e) {
+			e.preventDefault()
+			log('［［JS中］］JS calling handler "testObjcCallback"')
+			bridge.callHandler('testObjcCallback', {'foo': 'bar'}, function(response) {
+				log('［［JS中］］JS got response', response)
+			})
+		}
+	})
+	</script>
+<!--此处是你传参数的地方-->
+
+	<div id='buttons'></div> <div id='log'></div>
+</body></html>
